@@ -1,0 +1,17 @@
+{
+  "name": "soniq-processing-auto-deploy",
+  "description": "Auto-deploy processing service on main branch push",
+  "github": {
+    "owner": "robinsingh1",
+    "name": "soniq-music-dl",
+    "push": {
+      "branch": "^main$"
+    }
+  },
+  "filename": "cloudbuild.yaml",
+  "disabled": false,
+  "substitutions": {
+    "_SERVICE_NAME": "soniq-processor",
+    "_REGION": "us-central1"
+  }
+}

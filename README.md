@@ -117,13 +117,16 @@ YouTube URL → yt-dlp → Docker Spleeter → OpenAI Whisper → FFmpeg → Clo
 
 ## Technologies
 
-- **Docker Spleeter** - ML audio separation
+- **Python Spleeter** - ML audio separation (replaced Docker-in-Docker)
 - **OpenAI Whisper** - Speech transcription
 - **yt-dlp** - YouTube video downloading
 - **FFmpeg** - Video/audio processing
 - **Flask** - Web API framework
 - **Google Cloud Run** - Serverless deployment
 - **Google Cloud Storage** - Video storage
+
+## GitHub Auto-Deploy
+✅ Trigger "soniqpush" active - pushes to main branch automatically deploy to Cloud Run!
 
 ## Examples
 
