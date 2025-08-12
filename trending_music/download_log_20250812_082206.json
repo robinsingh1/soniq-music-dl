@@ -1,0 +1,58 @@
+{
+  "timestamp": "2025-08-12T08:22:06.479958",
+  "total_videos": 10,
+  "successful": 10,
+  "failed": 0,
+  "downloads": [
+    {
+      "index": 1,
+      "url": "https://www.youtube.com/watch?v=uLK2r3sG4lE",
+      "status": "success"
+    },
+    {
+      "index": 2,
+      "url": "https://www.youtube.com/watch?v=zP6eqCOM7tk",
+      "status": "success"
+    },
+    {
+      "index": 3,
+      "url": "https://www.youtube.com/watch?v=Nue3JiReHR4",
+      "status": "success"
+    },
+    {
+      "index": 4,
+      "url": "https://www.youtube.com/watch?v=je0roKRn3nY",
+      "status": "success"
+    },
+    {
+      "index": 5,
+      "url": "https://www.youtube.com/watch?v=qIfnSJl8RmA",
+      "status": "success"
+    },
+    {
+      "index": 6,
+      "url": "https://www.youtube.com/watch?v=KNtJGQkC-WI",
+      "status": "success"
+    },
+    {
+      "index": 7,
+      "url": "https://www.youtube.com/watch?v=0M1UCYRZAtM",
+      "status": "success"
+    },
+    {
+      "index": 8,
+      "url": "https://www.youtube.com/watch?v=DJhHNQFy1q4",
+      "status": "success"
+    },
+    {
+      "index": 9,
+      "url": "https://www.youtube.com/watch?v=0aNLFlFFKpw",
+      "status": "success"
+    },
+    {
+      "index": 10,
+      "url": "https://www.youtube.com/watch?v=5qYXNYs4OAo",
+      "status": "success"
+    }
+  ]
+}

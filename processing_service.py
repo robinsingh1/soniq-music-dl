@@ -11,6 +11,10 @@ from flask import Flask, request, jsonify
 import openai
 import requests
 from google.cloud import storage
+import numpy as np
+import librosa
+import soundfile as sf
+from spleeter.separator import Separator
 
 app = Flask(__name__)
 
@@ -19,7 +23,6 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'soniq-karaoke-videos')
 TEMP_DIR = tempfile.gettempdir()
 FFMPEG_PATH = '/usr/bin/ffmpeg'  # Cloud Run path
-DOCKER_PATH = '/usr/bin/docker'   # Cloud Run path
 
 def download_from_url(url, local_filename):
     """Download file from URL to local storage"""
@@ -51,9 +54,9 @@ def upload_to_gcs(local_path, gcs_filename):
         print(f"❌ GCS upload failed: {e}")
         return None
 
-def docker_spleeter_separation(video_path):
-    """Use Docker Spleeter for audio separation"""
-    print("🐳 Docker Spleeter Audio Separation")
+def python_spleeter_separation(video_path, test_duration=None):
+    """Use Python Spleeter library for audio separation"""
+    print("🎤 Python Spleeter Audio Separation")
     
     # Extract audio from video
     audio_path = os.path.join(TEMP_DIR, "input_audio.wav")
@@ -61,45 +64,70 @@ def docker_spleeter_separation(video_path):
     
     extract_cmd = [
         FFMPEG_PATH, '-i', video_path,
-        '-vn', '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2',
-        audio_path, '-y'
+        '-vn', '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2'
     ]
+    
+    # Add test duration limit if specified
+    if test_duration:
+        extract_cmd.extend(['-t', str(test_duration)])
+        print(f"⏱️ Test mode: limiting to {test_duration} seconds")
+    
+    extract_cmd.extend([audio_path, '-y'])
     
     result = subprocess.run(extract_cmd, capture_output=True, text=True)
     if not os.path.exists(audio_path):
         print("❌ Audio extraction failed")
+        print(f"FFmpeg stderr: {result.stderr}")
         return None, None
     
-    # Create output directory
-    output_dir = os.path.join(TEMP_DIR, "spleeter_output")
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Docker Spleeter command
-    print("🎤 Running Docker Spleeter ML separation...")
-    docker_cmd = [
-        DOCKER_PATH, 'run',
-        '-v', f"{TEMP_DIR}:/tmp",
-        '--rm',
-        'researchdeezer/spleeter',
-        'separate',
-        '-i', '/tmp/input_audio.wav',
-        '-p', 'spleeter:2stems-16kHz',
-        '-o', '/tmp/spleeter_output'
-    ]
-    
-    docker_result = subprocess.run(docker_cmd, capture_output=True, text=True)
-    
-    # Check results
-    audio_name = os.path.splitext(os.path.basename(audio_path))[0]
-    vocals_path = os.path.join(output_dir, audio_name, "vocals.wav")
-    accompaniment_path = os.path.join(output_dir, audio_name, "accompaniment.wav")
-    
-    if os.path.exists(vocals_path) and os.path.exists(accompaniment_path):
-        print("✅ ML separation successful!")
+    try:
+        # Initialize Spleeter separator
+        print("🔧 Initializing Spleeter...")
+        separator = Separator('spleeter:2stems-16kHz')
+        
+        # Load audio file
+        print("📂 Loading audio...")
+        waveform, sample_rate = librosa.load(audio_path, sr=44100, mono=False)
+        
+        # Ensure stereo format
+        if len(waveform.shape) == 1:
+            waveform = np.array([waveform, waveform])
+        elif waveform.shape[0] == 1:
+            waveform = np.repeat(waveform, 2, axis=0)
+        
+        # Transpose for Spleeter (time, channels)
+        waveform = waveform.T
+        
+        print(f"🎵 Audio shape: {waveform.shape}, Sample rate: {sample_rate}")
+        
+        # Separate using Spleeter
+        print("🎤 Running Spleeter ML separation...")
+        prediction = separator.separate(waveform)
+        
+        # Save separated tracks
+        vocals_path = os.path.join(TEMP_DIR, "vocals.wav")
+        accompaniment_path = os.path.join(TEMP_DIR, "accompaniment.wav")
+        
+        # Save vocals
+        vocals_audio = prediction['vocals']
+        sf.write(vocals_path, vocals_audio, sample_rate)
+        print(f"💾 Saved vocals: {vocals_path}")
+        
+        # Save accompaniment
+        accompaniment_audio = prediction['accompaniment']
+        sf.write(accompaniment_path, accompaniment_audio, sample_rate)
+        print(f"💾 Saved accompaniment: {accompaniment_path}")
+        
+        # Cleanup original audio
         os.remove(audio_path)
+        
+        print("✅ Python Spleeter separation successful!")
         return vocals_path, accompaniment_path
-    else:
-        print("❌ Docker Spleeter separation failed")
+        
+    except Exception as e:
+        print(f"❌ Python Spleeter separation failed: {e}")
+        import traceback
+        traceback.print_exc()
         return None, None
 
 def transcribe_audio(audio_path):
@@ -107,15 +135,15 @@ def transcribe_audio(audio_path):
     print("🎙️ Transcribing with OpenAI Whisper...")
     
     try:
-        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        openai.api_key = OPENAI_API_KEY
         
         # Check file size and chunk if needed
         file_size = os.path.getsize(audio_path)
         if file_size > 20 * 1024 * 1024:  # 20MB limit
-            return transcribe_chunked(client, audio_path)
+            return transcribe_chunked(audio_path)
         
         with open(audio_path, 'rb') as audio_file:
-            transcript = client.audio.transcriptions.create(
+            transcript = openai.Audio.transcribe(
                 model="whisper-1",
                 file=audio_file,
                 response_format="verbose_json",
@@ -129,7 +157,7 @@ def transcribe_audio(audio_path):
         print(f"❌ Transcription failed: {e}")
         return None
 
-def transcribe_chunked(client, audio_path):
+def transcribe_chunked(audio_path):
     """Transcribe large audio files in chunks"""
     print("📦 Chunking large audio file...")
     
@@ -168,7 +196,7 @@ def transcribe_chunked(client, audio_path):
     for start_offset, chunk_path in chunk_files:
         try:
             with open(chunk_path, 'rb') as audio_file:
-                transcript = client.audio.transcriptions.create(
+                transcript = openai.Audio.transcribe(
                     model="whisper-1",
                     file=audio_file,
                     response_format="verbose_json",
@@ -312,8 +340,11 @@ def process_video():
         if not download_from_url(video_url, local_video_path):
             return jsonify({'error': 'Failed to download video from URL'}), 500
         
+        # Check for test mode
+        test_duration = data.get('test_duration')  # 30 seconds for testing
+        
         # Separate audio
-        vocals_path, accompaniment_path = docker_spleeter_separation(local_video_path)
+        vocals_path, accompaniment_path = python_spleeter_separation(local_video_path, test_duration)
         
         if not vocals_path or not accompaniment_path:
             return jsonify({'error': 'Audio separation failed'}), 500

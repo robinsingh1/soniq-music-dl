@@ -1,11 +1,12 @@
-# Processing Service Dockerfile with Docker-in-Docker for Spleeter
-FROM python:3.11-slim
+# Processing Service Dockerfile with Python Spleeter
+FROM python:3.9-slim
 
-# Install system dependencies including Docker
+# Install system dependencies 
 RUN apt-get update && apt-get install -y \
     ffmpeg \
+    libsndfile1 \
+    libsndfile1-dev \
     curl \
-    docker.io \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -18,8 +19,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy processing service code
 COPY processing_service.py .
 
-# Pull Spleeter Docker image at build time
-RUN docker pull researchdeezer/spleeter || echo "Spleeter will be pulled at runtime"
+# Pre-download Spleeter models to speed up first run
+RUN python -c "from spleeter.separator import Separator; Separator('spleeter:2stems-16kHz')"
 
 # Expose port
 EXPOSE 8080

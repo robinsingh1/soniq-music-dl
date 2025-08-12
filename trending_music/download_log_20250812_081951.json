@@ -1,0 +1,43 @@
+{
+  "timestamp": "2025-08-12T08:19:51.264005",
+  "total_videos": 7,
+  "successful": 0,
+  "failed": 7,
+  "downloads": [
+    {
+      "index": 1,
+      "url": "https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=U0ZoqmyGJo8",
+      "status": "failed"
+    },
+    {
+      "index": 2,
+      "url": "https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=xLgRlJSgMh4",
+      "status": "failed"
+    },
+    {
+      "index": 3,
+      "url": "https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=7NgCf0TPgW8",
+      "status": "failed"
+    },
+    {
+      "index": 4,
+      "url": "https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=fTKqtvXjkvo",
+      "status": "failed"
+    },
+    {
+      "index": 5,
+      "url": "https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=16whabTqSkA",
+      "status": "failed"
+    },
+    {
+      "index": 6,
+      "url": "https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=rY2P7lHolMw",
+      "status": "failed"
+    },
+    {
+      "index": 7,
+      "url": "https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=obJbLSDsBAY",
+      "status": "failed"
+    }
+  ]
+}

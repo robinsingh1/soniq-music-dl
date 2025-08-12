@@ -1,0 +1,26 @@
+[
+  {
+    "video_name": "01_Tyla_-_PUSH_2_START_Official_Music_Video",
+    "gcs_url": "https://storage.googleapis.com/soniq-karaoke-videos/trending/01_Tyla_-_PUSH_2_START_Official_Music_Video.mp4",
+    "processing_result": {
+      "videos": []
+    },
+    "status": "partial_success"
+  },
+  {
+    "video_name": "02_GloRilla_-_TGIF_Official_Music_Video",
+    "gcs_url": "https://storage.googleapis.com/soniq-karaoke-videos/trending/02_GloRilla_-_TGIF_Official_Music_Video.mp4",
+    "processing_result": {
+      "videos": []
+    },
+    "status": "partial_success"
+  },
+  {
+    "video_name": "03_25Band_MACH_Official_Music_video_2024_4k",
+    "gcs_url": "https://storage.googleapis.com/soniq-karaoke-videos/trending/03_25Band_MACH_Official_Music_video_2024_4k.mp4",
+    "processing_result": {
+      "videos": []
+    },
+    "status": "partial_success"
+  }
+]
