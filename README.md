@@ -141,3 +141,4 @@ Perfect for different karaoke preferences and skill levels!
 ## License
 
 MIT License - See LICENSE file for details.# GitHub Auto-Deployment Test Fri 22 Aug 2025 15:28:44 EDT
+# GitHub trigger test - Fri 22 Aug 2025 15:38:10 EDT
