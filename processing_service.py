@@ -7,6 +7,8 @@ import os
 import tempfile
 import subprocess
 import uuid
+import json
+import time
 from flask import Flask, request, jsonify
 import openai
 import requests
@@ -22,7 +24,7 @@ app = Flask(__name__)
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'soniq-karaoke-videos')
 TEMP_DIR = tempfile.gettempdir()
-FFMPEG_PATH = '/usr/bin/ffmpeg'  # Cloud Run path
+FFMPEG_PATH = os.getenv('FFMPEG_PATH', '/usr/bin/ffmpeg')  # Cloud Run path, configurable for local testing
 
 def download_from_url(url, local_filename):
     """Download file from URL to local storage"""
@@ -349,33 +351,59 @@ def process_video():
         if not vocals_path or not accompaniment_path:
             return jsonify({'error': 'Audio separation failed'}), 500
         
-        # Transcribe vocals
-        transcript = transcribe_audio(vocals_path)
+        # Upload separated audio files to GCS for preservation
+        separated_audio_files = []
         
-        if not transcript:
-            return jsonify({'error': 'Transcription failed'}), 500
+        # Upload vocals
+        vocals_filename = f"separated_audio/{job_id}_vocals.wav"
+        vocals_gcs_url = upload_to_gcs(vocals_path, vocals_filename)
+        if vocals_gcs_url:
+            separated_audio_files.append({
+                'type': 'vocals',
+                'filename': vocals_filename,
+                'url': vocals_gcs_url
+            })
+            print(f"💾 Uploaded vocals to GCS: {vocals_gcs_url}")
         
-        # Create karaoke videos
-        results = []
+        # Upload accompaniment
+        accompaniment_filename = f"separated_audio/{job_id}_accompaniment.wav"
+        accompaniment_gcs_url = upload_to_gcs(accompaniment_path, accompaniment_filename)
+        if accompaniment_gcs_url:
+            separated_audio_files.append({
+                'type': 'accompaniment', 
+                'filename': accompaniment_filename,
+                'url': accompaniment_gcs_url
+            })
+            print(f"💾 Uploaded accompaniment to GCS: {accompaniment_gcs_url}")
         
-        for vocal_level in vocal_levels:
-            output_filename = f"karaoke_{job_id}_{int(vocal_level*100)}vocal.mp4"
-            video_path = create_karaoke_video(accompaniment_path, transcript, vocal_level, output_filename)
-            
-            if video_path:
-                # Upload to storage
-                gcs_url = upload_to_gcs(video_path, output_filename)
-                
-                if gcs_url:
-                    results.append({
-                        'vocal_level': int(vocal_level * 100),
-                        'url': gcs_url,
-                        'filename': output_filename
-                    })
-                    
-                    os.remove(video_path)
+        # Save input request metadata to GCS
+        request_metadata = {
+            'job_id': job_id,
+            'timestamp': time.time(),
+            'video_url': video_url,
+            'vocal_levels': vocal_levels,
+            'test_duration': test_duration,
+            'separated_audio_files': separated_audio_files
+        }
         
-        # Cleanup
+        metadata_path = os.path.join(TEMP_DIR, f"request_metadata_{job_id}.json")
+        with open(metadata_path, 'w') as f:
+            json.dump(request_metadata, f, indent=2)
+        
+        metadata_filename = f"requests/{job_id}_metadata.json"
+        metadata_gcs_url = upload_to_gcs(metadata_path, metadata_filename)
+        if metadata_gcs_url:
+            print(f"💾 Uploaded request metadata to GCS: {metadata_gcs_url}")
+        
+        # Cleanup metadata file
+        if os.path.exists(metadata_path):
+            os.remove(metadata_path)
+        
+        # Skip transcription and video creation for now - just return successful audio separation
+        print("✅ Audio separation completed successfully")
+        print("ℹ️ Skipping transcription and karaoke video creation")
+        
+        # Cleanup local files
         os.remove(local_video_path)
         if os.path.exists(vocals_path):
             os.remove(vocals_path)
@@ -385,7 +413,10 @@ def process_video():
         return jsonify({
             'success': True,
             'job_id': job_id,
-            'videos': results
+            'message': 'Audio separation completed successfully',
+            'separated_audio': separated_audio_files,
+            'metadata_url': metadata_gcs_url,
+            'note': 'Transcription and video creation skipped - audio separation only'
         })
         
     except Exception as e:

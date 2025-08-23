@@ -1,11 +1,12 @@
 flask==2.0.3
+werkzeug==2.0.3
 openai==0.28.1
 yt-dlp==2023.10.13
 gunicorn==21.2.0
 google-cloud-storage==2.10.0
 requests==2.31.0
-spleeter==2.4.0
-librosa==0.8.1
-soundfile==0.10.3.post1
-numpy==1.21.6
-tensorflow==2.8.4
+spleeter>=2.3.0
+librosa>=0.8.1
+soundfile>=0.10.3
+numpy>=1.21.0
+tensorflow>=2.10.0

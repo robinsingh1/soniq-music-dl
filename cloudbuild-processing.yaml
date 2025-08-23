@@ -1,9 +1,10 @@
 # Cloud Build configuration for Processing Service
 steps:
-  # Build Docker image with Docker-in-Docker support
+  # Build Docker image with x86_64 platform for TensorFlow compatibility
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
+      '--platform', 'linux/amd64',
       '-t', 'gcr.io/$PROJECT_ID/soniq-processor:latest',
       '-f', 'Dockerfile.processing',
       '.'
@@ -13,7 +14,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/soniq-processor:latest']
 
-  # Deploy to Cloud Run with privileged mode for Docker
+  # Deploy to Cloud Run with optimized settings for ML workloads
   - name: 'gcr.io/cloud-builders/gcloud'
     args: [
       'run', 'deploy', 'soniq-processor',
@@ -21,10 +22,14 @@ steps:
       '--platform', 'managed',
       '--region', 'us-central1',
       '--allow-unauthenticated',
-      '--memory', '4Gi',
-      '--cpu', '2',
-      '--timeout', '1800',
-      '--set-env-vars', 'BUCKET_NAME=soniq-karaoke-videos,OPENAI_API_KEY=placeholder'
+      '--memory', '8Gi',
+      '--cpu', '4',
+      '--timeout', '3600',
+      '--port', '8080',
+      '--max-instances', '10',
+      '--concurrency', '1',
+      '--cpu-boost',
+      '--set-env-vars', 'BUCKET_NAME=soniq-karaoke-videos'
     ]
 
 images:

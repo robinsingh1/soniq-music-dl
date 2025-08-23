@@ -1,0 +1,3 @@
+- focus on making this work with docker and spleeter, test locally new changes first
+- pre download spleeter models in the docker file
+- make sure the docker file uses an environment variable for port $PORT

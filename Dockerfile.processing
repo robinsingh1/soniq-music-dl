@@ -1,13 +1,16 @@
 # Processing Service Dockerfile with Python Spleeter
-# Cache busting: 2025-08-12 v2 - Fixed Python Spleeter dependencies
+# Cache busting: 2025-08-12 v4 - Using x86_64 platform for TensorFlow compatibility
 FROM python:3.9-slim
 
-# Install system dependencies 
+# Install system dependencies including audio libraries
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     libsndfile1 \
     libsndfile1-dev \
+    libsox-fmt-all \
+    sox \
     curl \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -20,15 +23,18 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy processing service code
 COPY processing_service.py .
 
-# Pre-download Spleeter models to speed up first run
-RUN python -c "from spleeter.separator import Separator; Separator('spleeter:2stems-16kHz')"
-
-# Expose port
-EXPOSE 8080
-
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV PORT=8080
+ENV TF_CPP_MIN_LOG_LEVEL=3
+ENV CUDA_VISIBLE_DEVICES=""
+
+# Pre-download Spleeter models to speed up first run
+# Using environment variables to handle TensorFlow compatibility
+RUN python -c "import os; os.environ['TF_CPP_MIN_LOG_LEVEL']='3'; from spleeter.separator import Separator; Separator('spleeter:2stems-16kHz')"
+
+# Expose port using environment variable
+EXPOSE $PORT
 
 # Run the processing service
 CMD ["python", "processing_service.py"]

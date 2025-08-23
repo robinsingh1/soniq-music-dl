@@ -1,0 +1,8 @@
+name: soniq-processing-github-trigger
+description: "Trigger for processing service deployment on GitHub push"
+github:
+  owner: robinsingh1
+  name: soniq-music-dl
+  push:
+    branch: ^main$
+filename: cloudbuild-processing.yaml
